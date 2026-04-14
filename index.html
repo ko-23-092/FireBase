@@ -87,6 +87,46 @@
             `;
         });
     });
+    import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+// Функция для обновления email пользователя по его ID
+async function updateUserEmail(documentId, newEmail) {
+    // 1. Создаем ссылку на конкретный документ в коллекции "requests"
+    const docRef = doc(window.db, "requests", documentId);
+    
+    try {
+        // 2. Отправляем запрос на обновление поля email
+        await updateDoc(docRef, {
+            email: newEmail
+        });
+        console.log(`Успешно! Email для документа ${documentId} обновлен.`);
+    } catch (error) {
+        console.error("Ошибка при обновлении данных:", error.message);
+    }
+}
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+// Функция для получения всех пользователей, у которых больше 5 лайков
+async function getPopularPosts() {
+    // 1. Формируем запрос с условием (фильтром)
+    const q = query(
+        collection(window.db, "requests"), 
+        where("likes", ">", 5)
+    );
+
+    try {
+        // 2. Выполняем запрос и получаем снимок данных
+        const querySnapshot = await getDocs(q);
+        
+        console.log("Популярные посты:");
+        // 3. Перебираем результаты
+        querySnapshot.forEach((doc) => {
+            console.log(`${doc.id} => Имя: ${doc.data().name}, Лайки: ${doc.data().likes}`);
+        });
+    } catch (error) {
+        console.error("Ошибка при поиске данных:", error.message);
+    }
+}
 </script>
 </body>
 </html>
