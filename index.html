@@ -62,12 +62,16 @@
 
     // ЛОГИКА АВТОРИЗАЦИИ (Popup лучше для GitHub Pages)
     document.getElementById('loginBtn').onclick = async () => {
+        const provider = new GoogleAuthProvider();
+        // Добавляем принудительный выбор аккаунта
+        provider.setCustomParameters({ prompt: 'select_account' });
+        
         try {
-            await signInWithPopup(auth, provider);
-            console.log("Вход выполнен успешно!");
+            const result = await signInWithPopup(auth, provider);
+            console.log("Успешный вход:", result.user);
         } catch (error) {
-            console.error("Ошибка входа:", error.code, error.message);
-            alert("Ошибка: " + error.message);
+            console.error("Детали ошибки:", error.code, error.message);
+            alert("Код ошибки: " + error.code);
         }
     };
     
