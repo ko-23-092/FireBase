@@ -110,7 +110,13 @@
 
     // --- АВТОРИЗАЦИЯ ---
     import { signInWithRedirect } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"; // добавь это в импорты, если нет
-    document.getElementById('loginBtn').onclick = () => signInWithRedirect(auth, new GoogleAuthProvider());
+    document.getElementById('loginBtn').onclick = async () => {
+        try {
+            await signInWithPopup(auth, new GoogleAuthProvider());
+        } catch (error) {
+        console.error("Ошибка при входе:", error);
+        }
+    };
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
     onAuthStateChanged(auth, async (user) => {
