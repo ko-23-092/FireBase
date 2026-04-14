@@ -1,52 +1,12 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Firebase Auth & Storage</title>
-    <style>
-        body { font-family: 'Inter', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .hidden { display: none; }
-        .post { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; width: 500px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .post img { width: 100%; border-radius: 8px; margin-top: 10px; }
-        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .user-info img { width: 30px; height: 30px; border-radius: 50%; }
-    </style>
-</head>
-<body>
-
-<div class="container" id="auth-section">
-    <h3>Вход в систему</h3>
-    <button id="loginBtn" style="background: #4285F4;">Войти через Google</button>
-</div>
-
-<div class="container hidden" id="form-section">
-    <div class="user-info">
-        <img id="user-pic" src="" alt="">
-        <span id="user-name"></span>
-        <button id="logoutBtn" style="width: auto; padding: 5px 10px; background: #dc3545;">Выйти</button>
-    </div>
-    <input type="text" id="post-text" placeholder="Что у вас нового?">
-    <input type="file" id="file-input" accept="image/*">
-    <button id="sendBtn">Опубликовать</button>
-</div>
-
-<div id="feed"></div>
-
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-    import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-    // ТВОИ КЛЮЧИ
     const firebaseConfig = {
       apiKey: "AIzaSyDGE5HQ-pJ9lOS_LUGHrUTTsdULUT0wVWM",
-      authDomain: "university-project-1106d.firebaseapp.com",
-      projectId: "university-project-1106d"
+      authDomain: "university-project-1106d.firebaseapp.com", // Используем стабильный домен Firebase
+      projectId: "university-project-1106d",
       storageBucket: "university-project-1106d.firebasestorage.app",
       messagingSenderId: "891409091301",
       appId: "1:891409091301:web:bca5c423346e091817a20c"
@@ -55,29 +15,23 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    
-    // Принудительно выбираем аккаунт, чтобы окно не схлопывалось
-    provider.setCustomParameters({ prompt: 'select_account' });
 
-    // ЛОГИКА АВТОРИЗАЦИИ (Popup лучше для GitHub Pages)
+    // ВХОД
     document.getElementById('loginBtn').onclick = async () => {
         const provider = new GoogleAuthProvider();
-        // Добавляем принудительный выбор аккаунта
         provider.setCustomParameters({ prompt: 'select_account' });
-        
         try {
-            const result = await signInWithPopup(auth, provider);
-            console.log("Успешный вход:", result.user);
-        } catch (error) {
-            console.error("Детали ошибки:", error.code, error.message);
-            alert("Код ошибки: " + error.code);
+            await signInWithPopup(auth, provider);
+        } catch (e) {
+            console.error("Ошибка входа:", e.message);
+            alert("Ошибка входа! Проверьте консоль F12.");
         }
     };
-    
+
+    // ВЫХОД
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-    // Слушатель состояния (скрывает/показывает форму)
+    // СЛУШАТЕЛЬ АВТОРИЗАЦИИ
     onAuthStateChanged(auth, (user) => {
         const authSec = document.getElementById('auth-section');
         const formSec = document.getElementById('form-section');
@@ -92,30 +46,23 @@
         }
     });
 
-    // ФУНКЦИЯ ЗАГРУЗКИ КАРТИНКИ И ПОСТА
+    // ОТПРАВКА ПОСТА
     document.getElementById('sendBtn').onclick = async () => {
         const text = document.getElementById('post-text').value;
-        const file = document.getElementById('file-input').files[0];
-        if (!text && !file) return;
+        if (!text) return alert("Введите текст!");
 
-        let imageUrl = null;
-        if (file) {
-            const fileRef = ref(storage, `images/${Date.now()}_${file.name}`);
-            const snapshot = await uploadBytes(fileRef, file);
-            imageUrl = await getDownloadURL(snapshot.ref);
+        try {
+            await addDoc(collection(db, "requests"), {
+                name: auth.currentUser.displayName,
+                email: text, // Поле email используем как текст сообщения
+                avatar: auth.currentUser.photoURL,
+                likes: 0,
+                timestamp: serverTimestamp()
+            });
+            document.getElementById('post-text').value = "";
+        } catch (e) {
+            alert("Ошибка отправки! Проверьте Rules в консоли Firebase.");
         }
-
-        await addDoc(collection(db, "requests"), {
-            name: auth.currentUser.displayName,
-            email: text, // используем это поле для текста поста
-            photo: imageUrl,
-            avatar: auth.currentUser.photoURL,
-            likes: 0,
-            timestamp: serverTimestamp()
-        });
-        
-        document.getElementById('post-text').value = "";
-        document.getElementById('file-input').value = "";
     };
 
     // ОТОБРАЖЕНИЕ ЛЕНТЫ
@@ -123,26 +70,24 @@
     onSnapshot(q, (snapshot) => {
         const feed = document.getElementById('feed');
         feed.innerHTML = "";
-        snapshot.forEach((doc) => {
-            const data = doc.data();
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
             feed.innerHTML += `
-                <div class="post">
-                    <div class="user-info">
-                        <img src="${data.avatar || ''}" alt="">
+                <div class="post" style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <img src="${data.avatar || ''}" style="width: 30px; height: 30px; border-radius: 50%;">
                         <b>${data.name}</b>
                     </div>
                     <p>${data.email}</p>
-                    ${data.photo ? `<img src="${data.photo}">` : ''}
-                    <button class="like-btn" onclick="processLike('${doc.id}')" style="width:auto; margin-top:10px; color:black; background:#f0f2f5;">👍 ${data.likes || 0}</button>
+                    <button onclick="processLike('${docSnap.id}')" style="width: auto; background: #eee; color: black; padding: 5px 10px;">👍 ${data.likes || 0}</button>
                 </div>
             `;
         });
     });
 
+    // ЛАЙКИ
     window.processLike = async (id) => {
-        if (!auth.currentUser) return alert("Войдите, чтобы ставить лайки!");
+        if (!auth.currentUser) return alert("Нужно войти!");
         await updateDoc(doc(db, "requests", id), { likes: increment(1) });
     };
 </script>
-</body>
-</html>
