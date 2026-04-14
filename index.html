@@ -55,13 +55,25 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    const storage = getStorage(app);
     const provider = new GoogleAuthProvider();
+    
+    // Принудительно выбираем аккаунт, чтобы окно не схлопывалось
+    provider.setCustomParameters({ prompt: 'select_account' });
 
-    // ЛОГИКА АВТОРИЗАЦИИ
-    document.getElementById('loginBtn').onclick = () => signInWithRedirect(auth, provider);
+    // ЛОГИКА АВТОРИЗАЦИИ (Popup лучше для GitHub Pages)
+    document.getElementById('loginBtn').onclick = async () => {
+        try {
+            await signInWithPopup(auth, provider);
+            console.log("Вход выполнен успешно!");
+        } catch (error) {
+            console.error("Ошибка входа:", error.code, error.message);
+            alert("Ошибка: " + error.message);
+        }
+    };
+    
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
+    // Слушатель состояния (скрывает/показывает форму)
     onAuthStateChanged(auth, (user) => {
         const authSec = document.getElementById('auth-section');
         const formSec = document.getElementById('form-section');
