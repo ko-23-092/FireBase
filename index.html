@@ -2,48 +2,94 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Firebase Auth Project</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личные сообщения</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #0056b3; }
-        .hidden { display: none; }
-        .post { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; width: 100%; max-width: 500px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left; }
-        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .user-info img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd; }
-        #user-pic { width: 40px; height: 40px; border-radius: 50%; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; display: flex; justify-content: center; height: 100vh; align-items: center; }
+        .app-container { width: 90%; max-width: 800px; height: 80vh; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Авторизация */
+        #auth-section { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center; }
+        #loginBtn { background: #4285F4; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        
+        /* Шапка с профилем */
+        .header { background: #fff; padding: 15px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+        .header-user { display: flex; align-items: center; gap: 10px; }
+        .header-user img { width: 40px; height: 40px; border-radius: 50%; }
+        #logoutBtn { color: red; font-size: 14px; cursor: pointer; border: none; background: none; text-decoration: underline; }
+
+        /* Основная рабочая зона */
+        .main-workspace { display: flex; height: 100%; overflow: hidden; }
+        
+        /* Левая панель - список юзеров */
+        .users-list { width: 30%; border-right: 1px solid #ddd; overflow-y: auto; background: #fafafa; }
+        .user-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; }
+        .user-item:hover { background: #ebebeb; }
+        .user-item.active { background: #e3f2fd; border-left: 4px solid #007bff; }
+        .user-item img { width: 35px; height: 35px; border-radius: 50%; }
+
+        /* Правая панель - чат */
+        .chat-area { width: 70%; display: flex; flex-direction: column; background: #fff; }
+        .chat-header { padding: 15px; border-bottom: 1px solid #ddd; background: #fafafa; font-weight: bold; }
+        .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f9f9f9; }
+        
+        /* Стили сообщений */
+        .msg { max-width: 70%; padding: 10px 15px; border-radius: 15px; font-size: 14px; word-wrap: break-word; }
+        .msg.incoming { background: #e4e6eb; align-self: flex-start; border-bottom-left-radius: 5px; }
+        .msg.outgoing { background: #0084ff; color: white; align-self: flex-end; border-bottom-right-radius: 5px; }
+
+        /* Ввод сообщения */
+        .input-area { display: flex; padding: 15px; border-top: 1px solid #ddd; background: #fff; gap: 10px; }
+        #msg-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        #sendBtn { background: #0084ff; color: white; border: none; padding: 0 20px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        #sendBtn:disabled { background: #ccc; }
+        
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="container" id="auth-section">
-    <h3>Добро пожаловать</h3>
-    <p>Войдите, чтобы оставлять сообщения</p>
-    <button id="loginBtn" style="background: #4285F4;">Войти через Google</button>
+<div class="app-container" id="auth-section">
+    <h2>Личные сообщения</h2>
+    <button id="loginBtn">Войти через Google</button>
 </div>
 
-<div class="container hidden" id="form-section">
-    <div class="user-info" style="justify-content: center; flex-direction: column;">
-        <img id="user-pic" src="" alt="avatar">
-        <span id="user-name" style="font-weight: bold; margin: 5px 0;"></span>
-        <button id="logoutBtn" style="width: auto; padding: 5px 15px; background: #dc3545; font-size: 12px;">Выйти</button>
+<div class="app-container hidden" id="app-section">
+    <div class="header">
+        <div class="header-user">
+            <img id="my-avatar" src="" alt="Мой аватар">
+            <div>
+                <strong id="my-name"></strong><br>
+                <button id="logoutBtn">Выйти</button>
+            </div>
+        </div>
     </div>
-    <hr>
-    <input type="text" id="post-text" placeholder="Введите ваше сообщение...">
-    <button id="sendBtn">Опубликовать</button>
-</div>
+    
+    <div class="main-workspace">
+        <div class="users-list" id="users-list">
+            <div style="padding: 15px; font-size: 12px; color: gray;">Выберите собеседника:</div>
+            </div>
 
-<div id="feed"></div>
+        <div class="chat-area">
+            <div class="chat-header" id="chat-header">Выберите чат слева</div>
+            <div class="messages-container" id="messages-container">
+                </div>
+            <div class="input-area hidden" id="input-area">
+                <input type="text" id="msg-input" placeholder="Ваше сообщение...">
+                <button id="sendBtn">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, setDoc, doc, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
+    // Твой конфиг со стабильным authDomain
     const firebaseConfig = {
-      apiKey: "AIzaSyDGE5HQ-pJ9lOS_LUGhrUTTsdULUT0wVWM",
+      apiKey: "AIzaSyDGE5HQ-pJ9lOS_LUGHrUTTsdULUT0wVWM",
       authDomain: "university-project-1106d.firebaseapp.com",
       projectId: "university-project-1106d",
       storageBucket: "university-project-1106d.firebasestorage.app",
@@ -55,78 +101,132 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // ЛОГИКА ВХОДА
-    document.getElementById('loginBtn').onclick = async () => {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: 'select_account' });
-        try {
-            await signInWithPopup(auth, provider);
-        } catch (e) {
-            console.error("Ошибка:", e.code);
-            alert("Ошибка входа: " + e.code);
-        }
-    };
+    let currentUser = null;
+    let selectedUser = null;
+    let unsubscribeMessages = null;
 
+    // ГЕНЕРАТОР ID ЧАТА (всегда одинаковый для двух людей)
+    const getChatId = (uid1, uid2) => (uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`);
+
+    // --- АВТОРИЗАЦИЯ ---
+    document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, new GoogleAuthProvider());
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-    // КОНТРОЛЬ ДОСТУПА
-    onAuthStateChanged(auth, (user) => {
-        const authSec = document.getElementById('auth-section');
-        const formSec = document.getElementById('form-section');
+    onAuthStateChanged(auth, async (user) => {
         if (user) {
-            authSec.classList.add('hidden');
-            formSec.classList.remove('hidden');
-            document.getElementById('user-name').innerText = user.displayName;
-            document.getElementById('user-pic').src = user.photoURL;
+            currentUser = user;
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('app-section').classList.remove('hidden');
+            document.getElementById('my-name').innerText = user.displayName;
+            document.getElementById('my-avatar').src = user.photoURL;
+
+            // Сохраняем текущего пользователя в базу (чтобы другие его видели)
+            await setDoc(doc(db, "users", user.uid), {
+                uid: user.uid,
+                name: user.displayName,
+                avatar: user.photoURL,
+                email: user.email
+            }, { merge: true });
+
+            loadUsers();
         } else {
-            authSec.classList.remove('hidden');
-            formSec.classList.add('hidden');
+            currentUser = null;
+            selectedUser = null;
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('app-section').classList.add('hidden');
         }
     });
 
-    // ОТПРАВКА
+    // --- ЗАГРУЗКА СПИСКА ПОЛЬЗОВАТЕЛЕЙ ---
+    function loadUsers() {
+        onSnapshot(collection(db, "users"), (snapshot) => {
+            const usersList = document.getElementById('users-list');
+            usersList.innerHTML = '<div style="padding: 15px; font-size: 12px; color: gray;">Выберите собеседника:</div>';
+            
+            snapshot.forEach((docSnap) => {
+                const userData = docSnap.data();
+                // Не показываем самого себя в списке контактов
+                if (userData.uid !== currentUser.uid) {
+                    const userEl = document.createElement('div');
+                    userEl.className = 'user-item';
+                    userEl.innerHTML = `
+                        <img src="${userData.avatar}" alt="avatar">
+                        <span>${userData.name}</span>
+                    `;
+                    userEl.onclick = () => openChat(userData, userEl);
+                    usersList.appendChild(userEl);
+                }
+            });
+        });
+    }
+
+    // --- ОТКРЫТИЕ ЧАТА С ПОЛЬЗОВАТЕЛЕМ ---
+    function openChat(userData, element) {
+        selectedUser = userData;
+        
+        // Подсветка активного контакта
+        document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        document.getElementById('chat-header').innerText = `Чат с: ${userData.name}`;
+        document.getElementById('input-area').classList.remove('hidden');
+        document.getElementById('msg-input').focus();
+
+        const chatId = getChatId(currentUser.uid, selectedUser.uid);
+
+        // Отписываемся от старого чата, если переключились на новый
+        if (unsubscribeMessages) unsubscribeMessages();
+
+        // Загрузка сообщений именно этого чата
+        const q = query(collection(db, "messages"), where("chatId", "==", chatId), orderBy("timestamp", "asc"));
+        
+        unsubscribeMessages = onSnapshot(q, (snapshot) => {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = "";
+            snapshot.forEach((msgSnap) => {
+                const msg = msgSnap.data();
+                const isMine = msg.senderId === currentUser.uid;
+                
+                container.innerHTML += `
+                    <div class="msg ${isMine ? 'outgoing' : 'incoming'}">
+                        ${msg.text}
+                    </div>
+                `;
+            });
+            // Автоматическая прокрутка вниз
+            container.scrollTop = container.scrollHeight;
+        });
+    }
+
+    // --- ОТПРАВКА СООБЩЕНИЯ ---
     document.getElementById('sendBtn').onclick = async () => {
-        const text = document.getElementById('post-text').value;
-        if (!text) return;
+        const input = document.getElementById('msg-input');
+        const text = input.value.trim();
+        
+        if (!text || !selectedUser) return;
+        
+        input.value = ""; // Очищаем поле сразу
+        const chatId = getChatId(currentUser.uid, selectedUser.uid);
 
         try {
-            await addDoc(collection(db, "requests"), {
-                name: auth.currentUser.displayName,
-                email: text, // Текст поста
-                avatar: auth.currentUser.photoURL,
-                likes: 0,
+            await addDoc(collection(db, "messages"), {
+                chatId: chatId,
+                senderId: currentUser.uid,
+                receiverId: selectedUser.uid,
+                text: text,
                 timestamp: serverTimestamp()
             });
-            document.getElementById('post-text').value = "";
-        } catch (e) {
-            alert("Нет доступа! Войдите в аккаунт.");
+        } catch (error) {
+            console.error("Ошибка отправки:", error);
+            alert("Ошибка при отправке сообщения.");
         }
     };
 
-    // ЛЕНТА
-    const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
-        const feed = document.getElementById('feed');
-        feed.innerHTML = "";
-        snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            feed.innerHTML += `
-                <div class="post">
-                    <div class="user-info">
-                        <img src="${data.avatar || ''}">
-                        <b>${data.name}</b>
-                    </div>
-                    <p>${data.email}</p>
-                    <button onclick="processLike('${docSnap.id}')" style="width: auto; background: #f0f2f5; color: #333; padding: 5px 15px;">👍 ${data.likes || 0}</button>
-                </div>
-            `;
-        });
+    // Отправка по кнопке Enter
+    document.getElementById('msg-input').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') document.getElementById('sendBtn').click();
     });
-
-    window.processLike = async (id) => {
-        if (!auth.currentUser) return alert("Войдите, чтобы ставить лайки!");
-        await updateDoc(doc(db, "requests", id), { likes: increment(1) });
-    };
 </script>
+
 </body>
 </html>
