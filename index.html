@@ -1,3 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Auth Project</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 100%; max-width: 500px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; text-align: center; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        .hidden { display: none; }
+        .post { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; width: 100%; max-width: 500px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: left; }
+        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .user-info img { width: 35px; height: 35px; border-radius: 50%; border: 1px solid #ddd; }
+        #user-pic { width: 40px; height: 40px; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="auth-section">
+    <h3>Добро пожаловать</h3>
+    <p>Войдите, чтобы оставлять сообщения</p>
+    <button id="loginBtn" style="background: #4285F4;">Войти через Google</button>
+</div>
+
+<div class="container hidden" id="form-section">
+    <div class="user-info" style="justify-content: center; flex-direction: column;">
+        <img id="user-pic" src="" alt="avatar">
+        <span id="user-name" style="font-weight: bold; margin: 5px 0;"></span>
+        <button id="logoutBtn" style="width: auto; padding: 5px 15px; background: #dc3545; font-size: 12px;">Выйти</button>
+    </div>
+    <hr>
+    <input type="text" id="post-text" placeholder="Введите ваше сообщение...">
+    <button id="sendBtn">Опубликовать</button>
+</div>
+
+<div id="feed"></div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
     import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, doc, increment } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -5,7 +44,7 @@
 
     const firebaseConfig = {
       apiKey: "AIzaSyDGE5HQ-pJ9lOS_LUGHrUTTsdULUT0wVWM",
-      authDomain: "university-project-1106d.firebaseapp.com", // Используем стабильный домен Firebase
+      authDomain: "university-project-1106d.firebaseapp.com",
       projectId: "university-project-1106d",
       storageBucket: "university-project-1106d.firebasestorage.app",
       messagingSenderId: "891409091301",
@@ -16,22 +55,21 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // ВХОД
+    // ЛОГИКА ВХОДА
     document.getElementById('loginBtn').onclick = async () => {
         const provider = new GoogleAuthProvider();
         provider.setCustomParameters({ prompt: 'select_account' });
         try {
             await signInWithPopup(auth, provider);
         } catch (e) {
-            console.error("Ошибка входа:", e.message);
-            alert("Ошибка входа! Проверьте консоль F12.");
+            console.error("Ошибка:", e.code);
+            alert("Ошибка входа: " + e.code);
         }
     };
 
-    // ВЫХОД
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-    // СЛУШАТЕЛЬ АВТОРИЗАЦИИ
+    // КОНТРОЛЬ ДОСТУПА
     onAuthStateChanged(auth, (user) => {
         const authSec = document.getElementById('auth-section');
         const formSec = document.getElementById('form-section');
@@ -46,26 +84,26 @@
         }
     });
 
-    // ОТПРАВКА ПОСТА
+    // ОТПРАВКА
     document.getElementById('sendBtn').onclick = async () => {
         const text = document.getElementById('post-text').value;
-        if (!text) return alert("Введите текст!");
+        if (!text) return;
 
         try {
             await addDoc(collection(db, "requests"), {
                 name: auth.currentUser.displayName,
-                email: text, // Поле email используем как текст сообщения
+                email: text, // Текст поста
                 avatar: auth.currentUser.photoURL,
                 likes: 0,
                 timestamp: serverTimestamp()
             });
             document.getElementById('post-text').value = "";
         } catch (e) {
-            alert("Ошибка отправки! Проверьте Rules в консоли Firebase.");
+            alert("Нет доступа! Войдите в аккаунт.");
         }
     };
 
-    // ОТОБРАЖЕНИЕ ЛЕНТЫ
+    // ЛЕНТА
     const q = query(collection(db, "requests"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
         const feed = document.getElementById('feed');
@@ -73,21 +111,22 @@
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             feed.innerHTML += `
-                <div class="post" style="background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <img src="${data.avatar || ''}" style="width: 30px; height: 30px; border-radius: 50%;">
+                <div class="post">
+                    <div class="user-info">
+                        <img src="${data.avatar || ''}">
                         <b>${data.name}</b>
                     </div>
                     <p>${data.email}</p>
-                    <button onclick="processLike('${docSnap.id}')" style="width: auto; background: #eee; color: black; padding: 5px 10px;">👍 ${data.likes || 0}</button>
+                    <button onclick="processLike('${docSnap.id}')" style="width: auto; background: #f0f2f5; color: #333; padding: 5px 15px;">👍 ${data.likes || 0}</button>
                 </div>
             `;
         });
     });
 
-    // ЛАЙКИ
     window.processLike = async (id) => {
-        if (!auth.currentUser) return alert("Нужно войти!");
+        if (!auth.currentUser) return alert("Войдите, чтобы ставить лайки!");
         await updateDoc(doc(db, "requests", id), { likes: increment(1) });
     };
 </script>
+</body>
+</html>
